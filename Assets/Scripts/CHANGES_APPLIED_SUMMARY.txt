@@ -1,0 +1,39 @@
+═══════════════════════════════════════════════════════════════════
+  СВОДКА ИЗМЕНЕНИЙ (все правки уже в файлах проекта)
+  Если после выхода из Play Mode что-то «пропало» — сохраните сцену в Edit Mode (Ctrl+S).
+═══════════════════════════════════════════════════════════════════
+
+■ 1. СКРИПТЫ (все изменения сохранены в файлах)
+   • M60VRShoot.cs
+     - Точка опоры: pivot = m60 receiver в Awake()
+     - Непрерывная стрельба: зажатая ЛКМ (GetButton "Fire1") или триггер
+     - Перегрев: случайно 30–45 с стрельбы → 5 с остывания, звук steam
+     - Дым из ствола: поле Muzzle Smoke (ParticleSystem), при отсутствии создаётся CreateDefaultMuzzleSmoke()
+     - Звук пара: поле Steam Sound; загрузка из Resources/Sound/steam если не задан
+   • GunPivotLockGrabTransformer.cs
+     - Фиксация точки опоры при захвате (_pivotCaptured), пушка только поворачивается
+
+■ 2. СЦЕНА SampleScene.unity (правки в файле)
+   • XR Grab Interactable на m60:
+     - m_TrackPosition: 0, m_MatchAttachPosition: 0 (пушка не уезжает при захвате)
+     - m_SnapToColliderVolume: 0, m_AttachEaseInTime: 0
+     - m_InteractionLayers m_Bits: 4294967295 (оба контроллера)
+     - m_ThrowOnDetach: 0 (нет броска кинематики)
+     - m_StartingSingleGrabTransformers: GunPivotLockGrabTransformer (1518063534)
+   • Компонент GunPivotLockGrabTransformer (1518063534) добавлен на m60
+   • XR Origin: XRGazeAssistance отключён (m_Enabled: 0) — нет предупреждения "No ray and select interactor"
+   • m60-1: BoxCollider не добавлен (нет ошибки отрицательного scale)
+
+■ 3. РЕСУРСЫ
+   • Assets/Resources/Sound/steam.mp3 — скопирован для загрузки звука пара при перегреве
+
+■ 4. ДОКУМЕНТАЦИЯ
+   • VR_M60_Setup_README.txt — раздел 4 обновлён (стрельба, перегрев, дым, звук пара)
+
+═══════════════════════════════════════════════════════════════════
+  ЧТО СДЕЛАТЬ В UNITY
+  1. Убедитесь, что вы в Edit Mode (не в Play Mode).
+  2. Меню File → Save Project (или Ctrl+S по сцене).
+  3. Если сцена показывала старую версию — закройте её и откройте снова из Assets/Scenes/SampleScene.unity (файл на диске уже с правками).
+  4. Запустите игру и проверьте: захват, непрерывная стрельба, перегрев, дым, звук пара.
+═══════════════════════════════════════════════════════════════════
