@@ -1,0 +1,113 @@
+═══════════════════════════════════════════════════════════════════
+  ЧЕК-ЛИСТ: НЕ МОГУ ВЗАИМОДЕЙСТВОВАТЬ С ПУШКАМИ КОНТРОЛЛЕРАМИ
+  Проверяйте по порядку. Где проверять = Hierarchy или Inspector.
+═══════════════════════════════════════════════════════════════════
+
+■ 1. XR INTERACTION MANAGER В СЦЕНЕ
+   Что: В сцене ровно один объект с компонентом "XR Interaction Manager".
+   Где проверить: Hierarchy — найдите объект (часто называется "XR Interaction Manager").
+   Как: Выберите объект → в Inspector должен быть компонент "XR Interaction Manager".
+   Если нет: ПКМ в Hierarchy → Create Empty → назовите "XR Interaction Manager" → Add Component → XR Interaction Manager.
+
+  ┌─ ГДЕ ВЗЯТЬ SAMPLES И ЧТО ДЕЛАТЬ, ЕСЛИ ИХ НЕТ ─────────────────────┐
+  │ Samples = примеры и префабы из пакета XR Interaction Toolkit.     │
+  │                                                                    │
+  │ Где найти Samples:                                                 │
+  │   1) Меню Unity: Window → Package Manager.                        │
+  │   2) В списке пакетов выберите "XR Interaction Toolkit".           │
+  │   3) Справа нажмите "Samples" (или вкладку с примерами).           │
+  │   4) Нажмите "Import" у "Starter Assets" (и при необходимости      │
+  │      "XR Device Simulator"). После импорта в проекте появится       │
+  │      папка: Assets/Samples/XR Interaction Toolkit/...             │
+  │                                                                    │
+  │ Префаб XR Origin (XR Rig) с контроллерами и лучами лежит здесь:   │
+  │   Assets/Samples/XR Interaction Toolkit/3.3.0/Starter Assets/      │
+  │   Prefabs/XR Origin (XR Rig).prefab                                │
+  │   Перетащите этот префаб в сцену (Hierarchy).                      │
+  │                                                                    │
+  │ Если Samples нет (не импортировали):                               │
+  │   • Зайдите в Package Manager → XR Interaction Toolkit → Import   │
+  │     образец "Starter Assets", как выше.                            │
+  │   • Либо настройте вручную: на каждый контроллер (Left/Right)      │
+  │     добавьте компонент XR Ray Interactor (или XR Near Far           │
+  │     Interactor) и привяжите к XR Interaction Manager.             │
+  └────────────────────────────────────────────────────────────────────┘
+
+■ 2. XR ORIGIN И КОНТРОЛЛЕРЫ В СЦЕНЕ
+   Что: Есть объект "XR Origin" (или "XR Origin (XR Rig)"), внутри — Left Controller и Right Controller.
+   Где проверить: Hierarchy — раскройте XR Origin → Camera Offset → должны быть Left Controller, Right Controller.
+   Как: Каждый контроллер должен быть активен (галочка слева от имени).
+   Если нет: Импортируйте Samples (см. блок выше), затем перетащите в сцену префаб "XR Origin (XR Rig).prefab" из Assets/Samples/XR Interaction Toolkit/3.3.0/Starter Assets/Prefabs/.
+
+■ 3. НА КОНТРОЛЛЕРЕ ЕСТЬ ИНТЕРАКТОР (ЛУЧ ИЛИ NEAR-FAR)
+   Что: На Left Controller и Right Controller есть компонент, который "стреляет" лучом или тянет объекты вблизи (XRRayInteractor или XRNearFarInteractor и т.п.).
+   Где проверить: Выберите Left Controller → Inspector → ищите компоненты вроде "XR Ray Interactor", "XR Near Far Interactor", "XR Direct Interactor".
+   Как: Должен быть хотя бы один такой интерактор и он включён (галочка у компонента).
+   Если нет: Используйте префаб "XR Origin (XR Rig)" из Samples (см. блок "Где взять Samples" выше). Если Samples нет — импортируйте Starter Assets в Package Manager → XR Interaction Toolkit → Samples → Import "Starter Assets". Либо вручную: на каждый контроллер Add Component → XR Ray Interactor.
+
+■ 4. ИНТЕРАКТОР ССЫЛАЕТСЯ НА XR INTERACTION MANAGER (ИЛИ НАЙДЁТ ЕГО САМ)
+   Что: У интерактора (Ray/NearFar) в поле "Interaction Manager" либо пусто (тогда ищет в сцене), либо указан наш XR Interaction Manager.
+   Где проверить: Left Controller → Inspector → компонент "XR Ray Interactor" или "XR Near Far Interactor" → поле "Interaction Manager".
+   Как: Оставьте пустым (None) — менеджер найдётся в сцене; или перетащите туда объект с XR Interaction Manager.
+   Важно: В сцене должен быть ровно один XR Interaction Manager (см. п. 1).
+
+■ 5. НА ПУШКЕ (m60) ВИСИТ XR GRAB INTERACTABLE
+   Что: На объекте m60 (корень пушки) есть компонент "XR Grab Interactable" и он включён.
+   Где проверить: Hierarchy → выберите m60 → Inspector → компонент "XR Grab Interactable", галочка включена.
+   Если нет: Add Component → XR → XR Grab Interactable.
+
+■ 6. У ПУШКИ ЕСТЬ COLLIDER (ОБЯЗАТЕЛЬНО)
+   Что: У m60 или у его дочерних объектов есть хотя бы один коллайдер (Box, Mesh, Capsule и т.д.). Луч контроллера попадает в объект только по коллайдеру.
+   Где проверить: Выберите m60 → Inspector. Либо на m60 есть Collider, либо в списке "Colliders" у XR Grab Interactable перечислены дочерние коллайдеры.
+   Как: Если коллайдеров нет — Add Component → Box Collider (или Mesh Collider, если модель сложная) на m60. У XR Grab Interactable в поле "Colliders" можно оставить пустым (тогда подхватятся все коллайдеры с детей) или перетащить нужные.
+   Важно: Коллайдер не должен быть отключён (не снимайте галочку с компонента Collider).
+
+■ 7. СЛОИ ВЗАИМОДЕЙСТВИЯ (INTERACTION LAYER MASK) СОВПАДАЮТ
+   Что: Контроллер (интерактор) и пушка (XR Grab Interactable) должны иметь хотя бы один общий слой взаимодействия.
+   Где проверить:
+     • Left Controller → XR Ray Interactor (или Near Far Interactor) → "Interaction Layer Mask".
+     • m60 → XR Grab Interactable → "Interaction Layer Mask".
+   Как: Проще всего — на пушке поставить "Interaction Layer Mask" = Default (или Everything). На контроллере по умолчанию обычно стоит Default. Главное — чтобы хотя бы один слой совпадал (например, оба "Default").
+   Если не уверены: На m60 в XR Grab Interactable выберите "Everything" для Interaction Layer Mask.
+
+■ 8. ОБЪЕКТ m60 НЕ НА СЛОЕ "IGNORE RAYCAST"
+   Что: Слой (Layer) объекта m60 не должен быть Ignore Raycast, иначе луч сквозь него пройдёт.
+   Где проверить: Выберите m60 → Inspector → сверху "Layer" (выпадающий список).
+   Как: Должен быть "Default" или любой слой, кроме "Ignore Raycast".
+
+■ 9. НА ПУШКЕ ЕСТЬ RIGIDBODY
+   Что: У m60 есть компонент Rigidbody (нужен для XR Grab Interactable).
+   Где проверить: m60 → Inspector → компонент "Rigidbody".
+   Как: Если нет — Add Component → Rigidbody. Use Gravity можно включить; при использовании Gun Stable Spawn пушка при старте будет кинематической.
+
+■ 10. ПУШКА И КОНТРОЛЛЕРЫ АКТИВНЫ
+   Что: В Hierarchy у m60 и у Left/Right Controller включена галочка (объекты активны).
+   Где проверить: Hierarchy — иконка слева от имени не затемнена.
+   Как: Включите объекты, если были выключены.
+
+■ 11. НИЧТО НЕ ЗАКРЫВАЕТ ПУШКУ ОТ ЛУЧА
+   Что: Между камерой/контроллером и пушкой нет невидимой стены или объекта с коллайдером, перехватывающего луч.
+   Где проверить: В сцене посмотрите, нет ли больших коллайдеров между игроком и m60 (стены, полки и т.д.).
+   Как: Временно отключите подозрительные коллайдеры или сдвиньте пушку на открытое место и проверьте снова.
+
+■ 12. ДИСТАНЦИЯ ЛУЧА
+   Что: У XR Ray Interactor есть максимальная дальность (Max Ray Cast Distance). Пушка должна быть ближе этой дальности.
+   Где проверить: Left Controller → XR Ray Interactor → "Max Ray Cast Distance" (или аналог).
+   Как: Увеличьте значение (например, 10–30 м), если пушка далеко.
+
+───────────────────────────────────────────────────────────────────
+  КРАТКО: ЧТО ОБЯЗАТЕЛЬНО ДОЛЖНО БЫТЬ
+───────────────────────────────────────────────────────────────────
+  ✓ В сцене: XR Interaction Manager.
+  ✓ В сцене: XR Origin с Left Controller и Right Controller.
+  ✓ На контроллерах: XR Ray Interactor (или Near Far) — включён.
+  ✓ На m60: XR Grab Interactable — включён.
+  ✓ На m60 (или детях): хотя бы один Collider.
+  ✓ На m60: Rigidbody.
+  ✓ Interaction Layer Mask на пушке и на интеракторе пересекаются (оба Default или пушка Everything).
+  ✓ Слой (Layer) m60 не Ignore Raycast.
+───────────────────────────────────────────────────────────────────
+
+Если всё выполнено и взаимодействие всё равно не работает:
+- Запустите игру и в консоли Unity посмотрите ошибки (XR, Interaction, NullReference).
+- Убедитесь, что проект использует Input System (Edit → Project Settings → Active Input Handling = Input System Package или Both).
