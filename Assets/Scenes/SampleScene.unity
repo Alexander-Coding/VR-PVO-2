@@ -1827,7 +1827,6 @@ MonoBehaviour:
   cubeScale: {x: 0.12, y: 0.12, z: 0.12}
   vehicleMaterial: {fileID: 2100000, guid: ddbed799adecb67459d0b2d8a04580e4, type: 2}
   orbitCenterOverride: {fileID: 0}
-<<<<<<< HEAD
   droppedBombPrefabs:
   - {fileID: 1789271049478664363, guid: 2449826e3feba054499059b9718c9350, type: 3}
   - {fileID: 1713790309569843146, guid: 86694b64f46af8042a42203a25c7b5ef, type: 3}
@@ -1836,8 +1835,6 @@ MonoBehaviour:
   - {fileID: 4658011185450039166, guid: 391eebf03b243af489cd88853e46d0c4, type: 3}
   - {fileID: 8626965700678476382, guid: 762e1495f2993504ead6fa35f5ab99bc, type: 3}
   explosionEffectPrefab: {fileID: 4914716930404006884, guid: aed12c224fbc8704d8eaa07a52e88f44, type: 3}
-=======
->>>>>>> 0f5036e6e741574d1828c4a261e08966e4e7af95
   playerPlatformCenter: {fileID: 0}
   noDropRadius: 7
   explosionSound: {fileID: 0}
