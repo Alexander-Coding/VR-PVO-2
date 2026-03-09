@@ -1689,9 +1689,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 740d8dfcd536be24fbec67e27cd16465, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1591047808}
-    - targetCorrespondingSourceObject: {fileID: -4910016121932582183, guid: 740d8dfcd536be24fbec67e27cd16465, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2015065996}
   m_SourcePrefab: {fileID: 100100000, guid: 740d8dfcd536be24fbec67e27cd16465, type: 3}
 --- !u!4 &608470142 stripped
 Transform:
@@ -4137,7 +4134,7 @@ MonoBehaviour:
   m_StartingSingleGrabTransformers:
   - {fileID: 1518063534}
   m_StartingMultipleGrabTransformers: []
-  m_AddDefaultGrabTransformers: 1
+  m_AddDefaultGrabTransformers: 0
   m_FarAttachMode: 0
   m_LimitLinearVelocity: 0
   m_LimitAngularVelocity: 0
@@ -4237,11 +4234,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7b3c4d5e6f708192a3b4c5d6e7f8091, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GunPivotLockGrabTransformer
-  pivotTransform: {fileID: 806177688}
-  pitchAxis: 0
-  customPitchAxis: {x: 1, y: 0, z: 0}
   platformTransform: {fileID: 0}
-  headCamera: {fileID: 0}
   grabBlendDuration: 0.15
 --- !u!1001 &1536917275
 PrefabInstance:
@@ -5492,11 +5485,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7b3c4d5e6f708192a3b4c5d6e7f8091, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GunPivotLockGrabTransformer
-  pivotTransform: {fileID: 806177688}
-  pitchAxis: 0
-  customPitchAxis: {x: 1, y: 0, z: 0}
   platformTransform: {fileID: 0}
-  headCamera: {fileID: 0}
   grabBlendDuration: 0.15
 --- !u!114 &1884137946
 MonoBehaviour:
@@ -6214,28 +6203,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4000013316604322, guid: f5c94d7d7f024eb43b7dd5258c0608d0, type: 3}
   m_PrefabInstance: {fileID: 1958512269}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &2015065993 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: -4910016121932582183, guid: 740d8dfcd536be24fbec67e27cd16465, type: 3}
-  m_PrefabInstance: {fileID: 601483226}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &2015065996
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2015065993}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 38442964f9768724990bc1e5a7f044be, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GunPlatformTurrelFollowYaw
-  rotationCenter: {fileID: 0}
-  rotationAxis: 0
-  customAxis: {x: 0, y: 1, z: 0}
-  customAxisTransform: {fileID: 0}
-  headCamera: {fileID: 0}
 --- !u!1001 &2015250801
 PrefabInstance:
   m_ObjectHideFlags: 0
