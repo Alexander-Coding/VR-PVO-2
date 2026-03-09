@@ -1786,7 +1786,7 @@ Transform:
   m_GameObject: {fileID: 632186538}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 47.690002, y: 0, z: 55.11}
+  m_LocalPosition: {x: 71.45, y: 0, z: 63.68}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1804,10 +1804,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: baae98170ce762d4186670baca6299e5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FlyingCubeSpawner
+  vehiclePrefabs:
+  - {fileID: 4880688868680380564, guid: 34c610e4358d04441b5741a05a7284a1, type: 3}
+  - {fileID: 3223541147463892719, guid: d9330f811a26b5f4b9276f819ec0ed64, type: 3}
+  - {fileID: 3280384310271628014, guid: 871ec326cd83ebb46b99b01bf9237e1e, type: 3}
+  - {fileID: 835737604007996434, guid: 33d2fc1d0c07999469310c08d25cdf22, type: 3}
+  - {fileID: 6719424853283353284, guid: 7ab255a1383a4a8479b3c1e7bcdb4e99, type: 3}
+  - {fileID: 3202563847419061804, guid: 8403b40cb52c1b34abb75577131ce87f, type: 3}
   spawnInterval: 2
   maxCubes: 5
-  cubeScale: {x: 0.5, y: 0.5, z: 0.5}
+  cubeScale: {x: 0.12, y: 0.12, z: 0.12}
+  vehicleMaterial: {fileID: 2100000, guid: ddbed799adecb67459d0b2d8a04580e4, type: 2}
   orbitCenterOverride: {fileID: 0}
+  droppedBombPrefabs:
+  - {fileID: 1789271049478664363, guid: 2449826e3feba054499059b9718c9350, type: 3}
+  - {fileID: 1713790309569843146, guid: 86694b64f46af8042a42203a25c7b5ef, type: 3}
+  - {fileID: 38741929496573875, guid: d017b340142008a4298ad36f2591b33c, type: 3}
+  - {fileID: 2600184127178119296, guid: 411ac624989de4a4f8c901e48526f9f6, type: 3}
+  - {fileID: 4658011185450039166, guid: 391eebf03b243af489cd88853e46d0c4, type: 3}
+  - {fileID: 8626965700678476382, guid: 762e1495f2993504ead6fa35f5ab99bc, type: 3}
+  explosionEffectPrefab: {fileID: 4914716930404006884, guid: aed12c224fbc8704d8eaa07a52e88f44, type: 3}
+  playerPlatformCenter: {fileID: 0}
+  noDropRadius: 7
+  explosionSound: {fileID: 0}
 --- !u!1001 &669724951
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3945,6 +3964,20 @@ MonoBehaviour:
   shootVolume: 0.8
   pivotPoint: {fileID: 1662758777}
   usePivotForGrab: 1
+  useNonVRFireInput: 1
+  overheatTimeMin: 30
+  overheatTimeMax: 45
+  cooldownDuration: 5
+  muzzleSmoke: {fileID: 0}
+  steamSound: {fileID: 0}
+  bulletPrefab: {fileID: 0}
+  muzzlePoint: {fileID: 0}
+  bulletScale: 0.05
+  bulletSpeed: 80
+  bulletLifetime: 5
+  bulletDirectionMode: 0
+  bulletDirectionTransform: {fileID: 0}
+  bulletDirectionLocal: {x: 0, y: 0, z: 1}
 --- !u!114 &1518063529
 MonoBehaviour:
   m_ObjectHideFlags: 0

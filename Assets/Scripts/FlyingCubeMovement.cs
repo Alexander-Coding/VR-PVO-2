@@ -20,13 +20,13 @@ public class FlyingCubeMovement : MonoBehaviour
     [Tooltip("Радиус/полуось по Z (для овала и восьмёрки)")]
     public float radiusZ = 8f;
     [Tooltip("Высота полёта над базой")]
-    public float orbitHeight = 11f;
+    public float orbitHeight = 22f;
     [Tooltip("Размах изменения высоты в полёте (плавный), в метрах")]
     public float heightVariationAmplitude = 0.5f;
     [Tooltip("Скорость изменения высоты (циклов в секунду) — чем меньше, тем плавнее")]
     public float heightVariationSpeed = 0.18f;
     [Tooltip("Базовая скорость облёта (градусов в секунду)")]
-    public float angularSpeedDeg = 22f;
+    public float angularSpeedDeg = 38f;
     [Tooltip("Крен в вираже (градусы)")]
     public float bankAngle = 18f;
 
@@ -36,18 +36,21 @@ public class FlyingCubeMovement : MonoBehaviour
     public float dropChancePerCheck = 0.12f;
     [Tooltip("Интервал проверки «сбросить или нет» (сек)")]
     public float dropCheckInterval = 2.2f;
-    [Tooltip("Масштаб сбрасываемого кубика")]
-    public float droppedCubeScale = 0.25f;
+    [Tooltip("Масштаб сбрасываемой бомбы/кубика")]
+    public float droppedCubeScale = 0.16f;
 
     Vector3 _baseCenter;
     Vector3 _noDropCenter;   // над этой зоной (платформа игрока) не сбрасываем
     float _noDropRadius;
     AudioClip _explosionClip;
+    GameObject[] _droppedBombPrefabs;
+    GameObject _explosionEffectPrefab;
     float _heightPhase;
     float _angleDeg;
     float _heightOffset;
-    float _radiusScale = 1f;   // индивидуальный масштаб радиуса — кубы не на одной траектории
-    float _speedMultiplier = 1f; // индивидуальная скорость — летят не синхронно
+    float _radiusScale = 1f;
+    float _radiusScaleZ = 1f;   // отдельный масштаб по Z — разная форма траектории
+    float _speedMultiplier = 1f;
     bool _initialized;
     bool _climbing;
     float _climbTimer;
@@ -62,22 +65,28 @@ public class FlyingCubeMovement : MonoBehaviour
     /// <param name="spawnPosition">Точка на земле, откуда взлетает куб</param>
     /// <param name="startAngleDeg">Начальный угол на маршруте</param>
     /// <param name="heightOffset">Смещение по высоте относительно других кубов</param>
-    /// <param name="radiusScale">Масштаб радиуса траектории (разводит кубы по «полосам»)</param>
+    /// <param name="radiusScale">Масштаб радиуса по X (размер и форма траектории)</param>
+    /// <param name="radiusScaleZ">Масштаб по Z (если &lt; 0 — равен radiusScale)</param>
     /// <param name="speedMultiplier">Множитель скорости (кубы летят не синхронно)</param>
     /// <param name="noDropCenter">Центр зоны, над которой не сбрасывать кубики (платформа игрока)</param>
     /// <param name="noDropRadius">Радиус этой зоны (XZ)</param>
-    /// <param name="explosionClip">Звук взрыва при падении маленького кубика</param>
-    public void SetOrbit(Vector3 baseCenter, Vector3 spawnPosition, float startAngleDeg, float heightOffset = 0f, float radiusScale = 1f, float speedMultiplier = 1f, Vector3? noDropCenter = null, float noDropRadius = 6f, AudioClip explosionClip = null)
+    /// <param name="explosionClip">Звук взрыва при падении</param>
+    /// <param name="droppedBombPrefabs">Префабы бомб для сброса (если null — сбрасывается куб)</param>
+    /// <param name="explosionEffectPrefab">Префаб эффекта взрыва при ударе о землю</param>
+    public void SetOrbit(Vector3 baseCenter, Vector3 spawnPosition, float startAngleDeg, float heightOffset = 0f, float radiusScale = 1f, float radiusScaleZ = -1f, float speedMultiplier = 1f, Vector3? noDropCenter = null, float noDropRadius = 6f, AudioClip explosionClip = null, GameObject[] droppedBombPrefabs = null, GameObject explosionEffectPrefab = null)
     {
         _baseCenter = baseCenter;
         _spawnPosition = spawnPosition;
         _angleDeg = startAngleDeg;
         _heightOffset = heightOffset;
         _radiusScale = radiusScale;
+        _radiusScaleZ = radiusScaleZ >= 0f ? radiusScaleZ : radiusScale;
         _speedMultiplier = speedMultiplier;
         _noDropCenter = noDropCenter ?? baseCenter;
         _noDropRadius = noDropRadius;
         _explosionClip = explosionClip;
+        _droppedBombPrefabs = droppedBombPrefabs;
+        _explosionEffectPrefab = explosionEffectPrefab;
         _heightPhase = Random.Range(0f, 6.28f);
         _climbing = true;
         _climbTimer = 0f;
@@ -96,7 +105,7 @@ public class FlyingCubeMovement : MonoBehaviour
         {
             _climbTimer += Time.deltaTime;
             float t = Mathf.Clamp01(_climbTimer / climbDuration);
-            t = t * t * (3f - 2f * t); // smoothstep
+            t = t * t * (3f - 2f * t);
             Vector3 targetPos = GetPathPosition(_angleDeg * Mathf.Deg2Rad);
             transform.position = Vector3.Lerp(_spawnPosition, targetPos, t);
             transform.rotation = Quaternion.Slerp(
@@ -128,17 +137,38 @@ public class FlyingCubeMovement : MonoBehaviour
         Vector3 pos = transform.position;
         float dx = pos.x - _noDropCenter.x;
         float dz = pos.z - _noDropCenter.z;
-        if (dx * dx + dz * dz < _noDropRadius * _noDropRadius) return; // над платформой игрока — не сбрасываем
+        if (dx * dx + dz * dz < _noDropRadius * _noDropRadius) return;
 
-        GameObject small = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        small.name = "DroppedCube";
+        GameObject small;
+        if (_droppedBombPrefabs != null && _droppedBombPrefabs.Length > 0)
+        {
+            GameObject prefab = _droppedBombPrefabs[Random.Range(0, _droppedBombPrefabs.Length)];
+            if (prefab == null) return;
+            small = Instantiate(prefab);
+            small.name = "DroppedBomb";
+        }
+        else
+        {
+            small = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            small.name = "DroppedCube";
+        }
         small.transform.position = pos;
+        small.transform.rotation = Quaternion.Euler(180f, 0f, 0f);
         small.transform.localScale = Vector3.one * droppedCubeScale;
-        var rb = small.AddComponent<Rigidbody>();
+        if (small.GetComponentInChildren<Collider>(true) == null)
+        {
+            var col = small.AddComponent<SphereCollider>();
+            col.radius = 0.5f;
+        }
+        var rb = small.GetComponent<Rigidbody>();
+        if (rb == null) rb = small.AddComponent<Rigidbody>();
         rb.useGravity = true;
+        rb.isKinematic = false;
         rb.mass = 0.5f;
-        var explosion = small.AddComponent<DroppedCubeExplosion>();
-        if (_explosionClip != null) explosion.explosionClip = _explosionClip;
+        var explosion = small.GetComponent<DroppedCubeExplosion>();
+        if (explosion == null) explosion = small.AddComponent<DroppedCubeExplosion>();
+        explosion.explosionClip = _explosionClip;
+        explosion.explosionEffectPrefab = _explosionEffectPrefab;
     }
 
     Vector3 GetPathPosition(float angleRad)
@@ -150,7 +180,7 @@ public class FlyingCubeMovement : MonoBehaviour
         float y = _baseCenter.y + orbitHeight + _heightOffset + heightVariation;
 
         float sx = radiusX * _radiusScale;
-        float sz = radiusZ * _radiusScale;
+        float sz = radiusZ * _radiusScaleZ;
         switch (pathType)
         {
             case PathType.Circle:
