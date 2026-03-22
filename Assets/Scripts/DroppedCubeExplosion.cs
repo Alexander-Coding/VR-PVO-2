@@ -13,15 +13,17 @@ public class DroppedCubeExplosion : MonoBehaviour
     public float explosionScale = 0.3f;
 
     bool _exploded;
-    Vector3 _prevPosition;
     Rigidbody _rb;
+    float _spawnTime;
 
     void Start()
     {
         if (explosionClip == null)
             explosionClip = Resources.Load<AudioClip>("ExplosionSound");
-        _prevPosition = transform.position;
-        _rb = GetComponent<Rigidbody>();
+        _spawnTime = Time.time;
+
+        // Ищем Rigidbody в иерархии — у сложных prefab'ов он на дочернем объекте
+        _rb = GetComponentInChildren<Rigidbody>(true);
         if (_rb != null)
             _rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
     }
@@ -29,7 +31,11 @@ public class DroppedCubeExplosion : MonoBehaviour
     void FixedUpdate()
     {
         if (_exploded) return;
-        if (transform.position.y <= 0.1f)
+        // Взрыв у земли (на случай если terrain не на y=0)
+        if (transform.position.y <= 0.5f)
+            Explode(transform.position);
+        // Страховочный таймер: если падает >20 сек и не достиг земли — взрываем
+        if (Time.time - _spawnTime > 20f)
             Explode(transform.position);
     }
 
@@ -38,7 +44,8 @@ public class DroppedCubeExplosion : MonoBehaviour
         if (_exploded) return;
         if (collision.contactCount == 0) return;
         ContactPoint contact = collision.GetContact(0);
-        if (contact.normal.y < 0.5f) return;
+        // Взрываемся при любом касании земли/объекта снизу (смягчили порог 0.5→0.25)
+        if (contact.normal.y < 0.25f) return;
         Explode(contact.point);
     }
 

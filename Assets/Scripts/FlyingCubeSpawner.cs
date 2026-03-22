@@ -18,7 +18,7 @@ public class FlyingCubeSpawner : MonoBehaviour
     [Tooltip("Максимум целей в полёте")]
     public int maxCubes = 5;
     [Tooltip("Масштаб цели (куба или префаба)")]
-    public Vector3 cubeScale = Vector3.one * 0.25f;
+    public Vector3 cubeScale = Vector3.one * 0.2875f;
     [Tooltip("Материал для летающих целей (например Palet с текстурой MilSim). Если задан — применяется ко всем рендерерам префаба.")]
     public Material vehicleMaterial;
     [Tooltip("Центр орбиты (над какими объектами кружить). Если не задан — берётся DecorationObject.")]
@@ -63,8 +63,9 @@ public class FlyingCubeSpawner : MonoBehaviour
             if (prefab == null) return;
             cube = Instantiate(prefab);
             cube.name = "FlyingVehicle_" + prefab.name;
-            var rb = cube.GetComponent<Rigidbody>();
-            if (rb != null) rb.isKinematic = true;
+            // Делаем kinematic ВСЕ Rigidbody в иерархии (у сложных prefab'ов RB на дочерних)
+            foreach (var rb in cube.GetComponentsInChildren<Rigidbody>(true))
+                rb.isKinematic = true;
             if (vehicleMaterial != null)
             {
                 foreach (var r in cube.GetComponentsInChildren<Renderer>(true))
@@ -108,15 +109,34 @@ public class FlyingCubeSpawner : MonoBehaviour
     }
 
     /// <summary>
-    /// Убеждаемся, что у объекта (или у его дочерних объектов) есть хотя бы один коллайдер.
-    /// Если нет — добавляем BoxCollider на корневой объект.
+    /// Добавляет SphereCollider на корень, охватывающий всю геометрию иерархии.
+    /// Размер вычисляется по Renderer-bounds — точность не нужна, главное попасть.
     /// </summary>
     static void EnsureCollider(GameObject go)
     {
-        if (go.GetComponentInChildren<Collider>(true) != null) return;
-        var box = go.AddComponent<BoxCollider>();
-        // 3x3x3 in local space → ~0.75 m at default vehicle scale 0.25, easier to hit
-        box.size = Vector3.one * 3f;
+        var sphere = go.AddComponent<SphereCollider>();
+
+        var renderers = go.GetComponentsInChildren<Renderer>(true);
+        if (renderers.Length > 0)
+        {
+            Bounds b = renderers[0].bounds;
+            foreach (var r in renderers) b.Encapsulate(r.bounds);
+
+            // Центр в локальном пространстве корня
+            sphere.center = go.transform.InverseTransformPoint(b.center);
+            // Радиус: полудиагональ мировых bounds → в локальное через lossyScale
+            float maxScale = Mathf.Max(
+                Mathf.Abs(go.transform.lossyScale.x),
+                Mathf.Abs(go.transform.lossyScale.y),
+                Mathf.Abs(go.transform.lossyScale.z));
+            sphere.radius = Mathf.Max(b.extents.magnitude / maxScale, 2f);
+            Debug.Log($"[EnsureCollider] {go.name}: sphere radius={sphere.radius:F2} local (bounds extents={b.extents.magnitude:F2}m world)");
+        }
+        else
+        {
+            sphere.radius = 5f; // ~1.4 м при масштабе 0.2875
+            Debug.Log($"[EnsureCollider] {go.name}: нет рендереров, fallback radius=5");
+        }
     }
 
     static Transform FindTransformByName(string name)

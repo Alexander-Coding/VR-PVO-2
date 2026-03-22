@@ -49,39 +49,56 @@ public class BulletHit : MonoBehaviour
     {
         _hit = true;
 
-        // Проверяем, является ли цель летающим объектом
-        FlyingCubeMovement flying = hitObject.GetComponentInParent<FlyingCubeMovement>();
-        if (flying == null)
-            flying = hitObject.GetComponent<FlyingCubeMovement>();
+        // Ищем FlyingCubeMovement вверх и вниз по иерархии
+        FlyingCubeMovement flying = hitObject.GetComponentInParent<FlyingCubeMovement>(true);
+        if (flying == null) flying = hitObject.GetComponentInChildren<FlyingCubeMovement>(true);
+
+        Debug.Log($"[BulletHit] Попал в: '{hitObject.name}' (root: '{hitObject.transform.root.name}') | FlyingCubeMovement: {(flying != null ? "ЕСТЬ → сбиваю!" : "НЕТ")}");
 
         if (flying != null)
         {
-            // Небольшой эффект попадания
             SpawnEffect(point);
             PlayHitSound(point);
 
-            // Отключаем полётный скрипт — цель начинает падать
+            // Отключаем полётный скрипт
             flying.enabled = false;
 
-            // Включаем физику
-            Rigidbody rb = flying.GetComponent<Rigidbody>();
-            if (rb == null) rb = flying.gameObject.AddComponent<Rigidbody>();
-            rb.isKinematic = false;
-            rb.useGravity = true;
-            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-            // Небольшой импульс от попадания
-            rb.linearVelocity = transform.forward * 5f + Vector3.up * 2f;
+            GameObject flyRoot = flying.gameObject;
 
-            // DroppedCubeExplosion — взрыв при падении на землю
-            var explosion = flying.GetComponent<DroppedCubeExplosion>();
-            if (explosion == null) explosion = flying.gameObject.AddComponent<DroppedCubeExplosion>();
+            // Переключаем ВСЕ Rigidbody в иерархии (prefab'ы могут иметь RB на детях)
+            var allRbs = flyRoot.GetComponentsInChildren<Rigidbody>(true);
+            Rigidbody mainRb = null;
+            foreach (var rb in allRbs)
+            {
+                rb.isKinematic = false;
+                rb.useGravity = true;
+                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+                if (mainRb == null) mainRb = rb;
+            }
+            if (mainRb == null)
+            {
+                mainRb = flyRoot.AddComponent<Rigidbody>();
+                mainRb.useGravity = true;
+                mainRb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+            }
+
+            // Импульс + случайное вращение — самолёт кувыркается при падении
+            mainRb.linearVelocity = transform.forward * 8f + Vector3.down * 3f;
+            mainRb.angularVelocity = new Vector3(
+                Random.Range(-4f, 4f),
+                Random.Range(-2f, 2f),
+                Random.Range(-4f, 4f));
+
+            Debug.Log($"[BulletHit] Сбит! '{flyRoot.name}', RB на: '{mainRb.gameObject.name}'");
+
+            var explosion = flyRoot.GetComponent<DroppedCubeExplosion>();
+            if (explosion == null) explosion = flyRoot.AddComponent<DroppedCubeExplosion>();
             if (hitEffectPrefab != null) explosion.explosionEffectPrefab = hitEffectPrefab;
             if (hitSound != null) explosion.explosionClip = hitSound;
-            explosion.explosionScale = 0.6f;
+            explosion.explosionScale = 1.5f;
         }
         else
         {
-            // Попали в статику или другой объект — просто небольшой эффект
             SpawnEffect(point);
             PlayHitSound(point);
         }

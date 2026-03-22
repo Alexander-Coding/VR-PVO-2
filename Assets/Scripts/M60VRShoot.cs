@@ -82,6 +82,12 @@ public class M60VRShoot : MonoBehaviour
     public Transform bulletDirectionTransform;
     public Vector3 bulletDirectionLocal = new Vector3(0f, 0f, 1f);
 
+    [Header("Конвергенция (сведение стволов)")]
+    [Tooltip("Сводить пули к точке прицела. При двух стволах пули сходятся в одну точку.")]
+    public bool useConvergence = true;
+    [Tooltip("Дистанция схождения (м): на этом расстоянии оба ствола бьют точно в центр прицела.")]
+    public float convergenceDistance = 150f;
+
     XRGrabInteractable _grab;
     AudioSource _audioSource;
     AudioSource _steamSource;
@@ -251,13 +257,28 @@ public class M60VRShoot : MonoBehaviour
         if (_cachedBulletTemplate == null) return;
 
         Transform spawn = muzzlePoint != null ? muzzlePoint : (pivotPoint != null ? pivotPoint : transform);
-        Vector3 dir = GetBulletDirection(spawn);
-        if (dir.sqrMagnitude < 0.0001f) dir = spawn.forward;
-        dir = dir.normalized;
+        Vector3 barrelDir = GetBulletDirection(spawn);
+        if (barrelDir.sqrMagnitude < 0.0001f) barrelDir = spawn.forward;
+        barrelDir = barrelDir.normalized;
 
         // Смещаем точку спавна на 0.6 м вперёд — ствол может быть в казённой части,
         // и пуля иначе появится внутри коллайдеров самой пушки.
-        Vector3 pos = spawn.position + dir * 0.6f;
+        Vector3 pos = spawn.position + barrelDir * 0.6f;
+
+        Vector3 dir;
+        if (useConvergence && convergenceDistance > 0f)
+        {
+            // Точка фокуса — куда указывает ствол на дистанции схождения.
+            // Оба ствола (m60 и m60-1) целятся в одну мировую точку,
+            // поэтому трассы сходятся ровно в прицеле.
+            Vector3 focusPoint = spawn.position + barrelDir * convergenceDistance;
+            dir = (focusPoint - pos).normalized;
+        }
+        else
+        {
+            dir = barrelDir;
+        }
+
         Quaternion rot = Quaternion.LookRotation(dir);
 
         GameObject bullet = Instantiate(_cachedBulletTemplate, pos, rot);
@@ -275,10 +296,10 @@ public class M60VRShoot : MonoBehaviour
             sc.radius = 0.5f;
         }
 
-        // Увеличенный trigger — зона зачёта попадания (~0.1 м при bulletScale=0.05)
+        // Увеличенный trigger — зона зачёта попадания (~0.3 м при bulletScale=0.05)
         var hitTrigger = bullet.AddComponent<SphereCollider>();
         hitTrigger.isTrigger = true;
-        hitTrigger.radius = 2.0f;
+        hitTrigger.radius = 6.0f;
 
         Rigidbody rb = bullet.GetComponent<Rigidbody>();
         if (rb == null) rb = bullet.AddComponent<Rigidbody>();
