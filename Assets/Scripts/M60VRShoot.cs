@@ -41,7 +41,7 @@ public class M60VRShoot : MonoBehaviour
     public float overheatTimeMax = 45f;
     public float cooldownDuration = 5f;
     [Tooltip("Скорость пассивного охлаждения (сек нагрева / сек реального времени). 0 = не охлаждается само.")]
-    public float passiveCoolRate = 2f;
+    public float passiveCoolRate = 1f;
 
     [Header("Дым из ствола")]
     [Tooltip("ParticleSystem дыма. Если не задан — ищется дочерний MuzzleSmoke.")]
@@ -62,6 +62,18 @@ public class M60VRShoot : MonoBehaviour
     public float bulletSpeed = 80f;
     [Tooltip("Через сколько секунд уничтожить пулю (0 — не уничтожать).")]
     public float bulletLifetime = 5f;
+
+    [Header("След пули")]
+    [Tooltip("Показывать трассер (TrailRenderer) за пулей.")]
+    public bool showBulletTrail = true;
+    [Tooltip("Длина следа в секундах.")]
+    public float trailTime = 0.18f;
+    [Tooltip("Ширина следа у основания.")]
+    public float trailStartWidth = 0.03f;
+    [Tooltip("Цвет начала следа.")]
+    public Color trailStartColor = new Color(1f, 0.9f, 0.5f, 1f);
+    [Tooltip("Цвет конца следа (прозрачный).")]
+    public Color trailEndColor = new Color(1f, 0.9f, 0.5f, 0f);
 
     public enum BulletDirectionMode { MuzzleForward, CustomTransform, LocalDirection }
 
@@ -239,10 +251,13 @@ public class M60VRShoot : MonoBehaviour
         if (_cachedBulletTemplate == null) return;
 
         Transform spawn = muzzlePoint != null ? muzzlePoint : (pivotPoint != null ? pivotPoint : transform);
-        Vector3 pos = spawn.position;
         Vector3 dir = GetBulletDirection(spawn);
         if (dir.sqrMagnitude < 0.0001f) dir = spawn.forward;
         dir = dir.normalized;
+
+        // Смещаем точку спавна на 0.6 м вперёд — ствол может быть в казённой части,
+        // и пуля иначе появится внутри коллайдеров самой пушки.
+        Vector3 pos = spawn.position + dir * 0.6f;
         Quaternion rot = Quaternion.LookRotation(dir);
 
         GameObject bullet = Instantiate(_cachedBulletTemplate, pos, rot);
@@ -260,12 +275,41 @@ public class M60VRShoot : MonoBehaviour
             sc.radius = 0.5f;
         }
 
+        // Увеличенный trigger — зона зачёта попадания (~0.1 м при bulletScale=0.05)
+        var hitTrigger = bullet.AddComponent<SphereCollider>();
+        hitTrigger.isTrigger = true;
+        hitTrigger.radius = 2.0f;
+
         Rigidbody rb = bullet.GetComponent<Rigidbody>();
         if (rb == null) rb = bullet.AddComponent<Rigidbody>();
         rb.isKinematic = false;
         rb.useGravity = false;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         rb.linearVelocity = dir * bulletSpeed;
+
+        // Игнорируем коллизии со всей иерархией пушки (дочерние И родительские объекты),
+        // иначе пуля мгновенно уничтожается, задев коллайдер платформы или лафета.
+        var bulletColliders = bullet.GetComponents<Collider>();
+        var seen = new System.Collections.Generic.HashSet<Collider>();
+        foreach (var gc in GetComponentsInChildren<Collider>(true)) seen.Add(gc);
+        foreach (var gc in GetComponentsInParent<Collider>(true))  seen.Add(gc);
+        foreach (var gc in seen)
+            foreach (var bc in bulletColliders)
+                Physics.IgnoreCollision(bc, gc, true);
+
+        if (showBulletTrail)
+        {
+            var trail = bullet.AddComponent<TrailRenderer>();
+            trail.time          = trailTime;
+            trail.startWidth    = trailStartWidth;
+            trail.endWidth      = 0f;
+            trail.startColor    = trailStartColor;
+            trail.endColor      = trailEndColor;
+            trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            trail.receiveShadows = false;
+            // Стандартный Sprites/Default материал — виден без дополнительных ассетов
+            trail.material = new Material(Shader.Find("Sprites/Default"));
+        }
 
         if (bullet.GetComponent<BulletHit>() == null)
             bullet.AddComponent<BulletHit>();
@@ -351,6 +395,9 @@ public class M60VRShoot : MonoBehaviour
         go.transform.localRotation = Quaternion.identity;
         go.transform.localScale = Vector3.one;
         var ps = go.AddComponent<ParticleSystem>();
+        // Stop immediately — Unity starts playing the PS on AddComponent; duration can't be
+        // changed while the system is playing.
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         var main = ps.main;
         main.duration = 0.2f;
         main.startLifetime = 0.3f;

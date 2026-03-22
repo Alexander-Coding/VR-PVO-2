@@ -16,9 +16,9 @@ public class FlyingCubeMovement : MonoBehaviour
     [Tooltip("Тип траектории")]
     public PathType pathType = PathType.Figure8;
     [Tooltip("Радиус/полуось по X")]
-    public float radiusX = 70f;
+    public float radiusX = 91f;
     [Tooltip("Радиус/полуось по Z (для овала и восьмёрки)")]
-    public float radiusZ = 50f;
+    public float radiusZ = 65f;
     [Tooltip("Высота полёта над базой")]
     public float orbitHeight = 30f;
     [Tooltip("Размах изменения высоты в полёте (плавный), в метрах")]

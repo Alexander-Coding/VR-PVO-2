@@ -1299,15 +1299,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -7138120755818708651, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       propertyPath: m_LocalScale.x
-      value: 25
+      value: 250
       objectReference: {fileID: 0}
     - target: {fileID: -7138120755818708651, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       propertyPath: m_LocalScale.y
-      value: 25
+      value: 250
       objectReference: {fileID: 0}
     - target: {fileID: -7138120755818708651, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       propertyPath: m_LocalScale.z
-      value: 25
+      value: 250
       objectReference: {fileID: 0}
     - target: {fileID: -7138120755818708651, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       propertyPath: m_LocalPosition.z
@@ -4169,6 +4169,7 @@ MonoBehaviour:
   overheatTimeMin: 30
   overheatTimeMax: 45
   cooldownDuration: 5
+  passiveCoolRate: 8
   muzzleSmoke: {fileID: 0}
   steamSound: {fileID: 0}
   bulletPrefab: {fileID: 0}
@@ -5679,6 +5680,7 @@ MonoBehaviour:
   overheatTimeMin: 30
   overheatTimeMax: 45
   cooldownDuration: 5
+  passiveCoolRate: 8
   muzzleSmoke: {fileID: 0}
   steamSound: {fileID: 0}
   bulletPrefab: {fileID: 0}

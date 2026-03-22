@@ -100,7 +100,11 @@ public class FlyingCubeSpawner : MonoBehaviour
 
     static int CountFlyingCubes()
     {
-        return Object.FindObjectsByType<FlyingCubeMovement>(FindObjectsSortMode.None).Length;
+        // Only count planes that are still flying (enabled = false means shot down and falling)
+        int count = 0;
+        foreach (var m in Object.FindObjectsByType<FlyingCubeMovement>(FindObjectsSortMode.None))
+            if (m.enabled) count++;
+        return count;
     }
 
     /// <summary>
@@ -111,8 +115,8 @@ public class FlyingCubeSpawner : MonoBehaviour
     {
         if (go.GetComponentInChildren<Collider>(true) != null) return;
         var box = go.AddComponent<BoxCollider>();
-        // Размер коллайдера по умолчанию 1x1x1 в локальном пространстве — подойдёт для любого масштаба
-        box.size = Vector3.one;
+        // 3x3x3 in local space → ~0.75 m at default vehicle scale 0.25, easier to hit
+        box.size = Vector3.one * 3f;
     }
 
     static Transform FindTransformByName(string name)
