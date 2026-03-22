@@ -79,6 +79,9 @@ public class FlyingCubeSpawner : MonoBehaviour
         cube.transform.position = spawnPos;
         cube.transform.localScale = cubeScale;
 
+        // Гарантируем наличие коллайдера на цели — иначе пули не смогут попасть
+        EnsureCollider(cube);
+
         var movement = cube.GetComponent<FlyingCubeMovement>();
         if (movement == null) movement = cube.AddComponent<FlyingCubeMovement>();
         int n = CountFlyingCubes();
@@ -98,6 +101,18 @@ public class FlyingCubeSpawner : MonoBehaviour
     static int CountFlyingCubes()
     {
         return Object.FindObjectsByType<FlyingCubeMovement>(FindObjectsSortMode.None).Length;
+    }
+
+    /// <summary>
+    /// Убеждаемся, что у объекта (или у его дочерних объектов) есть хотя бы один коллайдер.
+    /// Если нет — добавляем BoxCollider на корневой объект.
+    /// </summary>
+    static void EnsureCollider(GameObject go)
+    {
+        if (go.GetComponentInChildren<Collider>(true) != null) return;
+        var box = go.AddComponent<BoxCollider>();
+        // Размер коллайдера по умолчанию 1x1x1 в локальном пространстве — подойдёт для любого масштаба
+        box.size = Vector3.one;
     }
 
     static Transform FindTransformByName(string name)

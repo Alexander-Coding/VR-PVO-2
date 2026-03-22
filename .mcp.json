@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "unityMCP": {
+      "command": "C:\\Users\\Alexa\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\uvx.exe",
+      "args": [
+        "--from",
+        "mcpforunityserver==9.5.2",
+        "mcp-for-unity",
+        "--transport",
+        "stdio"
+      ]
+    }
+  }
+}

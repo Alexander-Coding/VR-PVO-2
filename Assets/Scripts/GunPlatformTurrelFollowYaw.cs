@@ -1,139 +1,141 @@
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 /// <summary>
-/// Вешается на платформу GunPlatformTurrel. Когда захвачена хотя бы одна пушка (m60/m60-1),
-/// платформа поворачивается по горизонтали (yaw) за камерой — влево/вправо куда смотришь.
-/// Пушки при этом могут наклоняться только вверх/вниз; горизонтальный поворот только вместе с платформой.
+/// Вешается на antiaircraft gun. Только YAW (горизонтальный поворот).
+/// VR: платформа следует за поворотом головы. XR Origin НЕ вращается от головы
+///     (VR-шлем сам отслеживает ориентацию — двойной поворот не нужен).
+/// Клавиатура ←/→: вращают и платформу, и XR Origin (игрок "едет" вместе с пушкой).
+/// Pitch (наклон стволов вверх/вниз) — в GunPivotFollowHeadPitch на GunPitchPivot.
 /// </summary>
 public class GunPlatformTurrelFollowYaw : MonoBehaviour
 {
-    public enum RotationAxisType
-    {
-        WorldY,
-        WorldX,
-        WorldZ,
-        LocalY,
-        LocalX,
-        LocalZ,
-        Custom
-    }
-
-    [Header("Центр и ось вращения")]
-    [Tooltip("Объект, относительно которого вращается платформа (мировая позиция остаётся неподвижной). Если не задан — вращение вокруг собственной позиции платформы.")]
-    [SerializeField] Transform rotationCenter;
-    [Tooltip("Ось вращения: World — глобальные оси; Local — локальные оси платформы (transform.up/right/forward).")]
-    [SerializeField] RotationAxisType rotationAxis = RotationAxisType.LocalY;
-    [Tooltip("Используется при Custom: направление оси вращения (нормализуется). Либо задайте Transform в customAxisTransform.")]
-    [SerializeField] Vector3 customAxis = Vector3.up;
-    [Tooltip("При Custom: ось берётся как forward этого объекта (если задан). Иначе используется customAxis.")]
-    [SerializeField] Transform customAxisTransform;
-
     [Header("Камера")]
-    [Tooltip("Камера головы (VR). Если не задана — Camera.main.")]
+    [Tooltip("VR-камера головы. Если не задана — Camera.main.")]
     [SerializeField] Camera headCamera;
 
+    [Header("XR Origin")]
+    [Tooltip("Корень XR Rig. Если не задан — ищется по иерархии камеры.")]
+    [SerializeField] Transform xrOriginOverride;
+    [Tooltip("При повороте клавишами ←/→ XR Origin тоже вращается (игрок едет вместе с пушкой).")]
+    [SerializeField] bool rotateXROriginWithKeyboard = true;
+
+    [Header("VR слежение — Yaw")]
+    [Tooltip("Всегда следить за yaw головы, даже без захвата пушки.")]
+    [SerializeField] bool vrAlwaysActive = true;
+
+    [Header("Клавиатура — Yaw")]
+    [SerializeField] bool keyboardAlwaysActive = true;
+    [Tooltip("Скорость поворота клавишами (градусов/сек).")]
+    [SerializeField] float keyboardYawSpeed = 60f;
+
     int _grabbedCount;
-    bool _capturedInitialAngles;
-    float _initialPlatformAngle;
-    float _initialCameraAngle;
+    float _prevCamYaw;
+    bool _camYawCaptured;
+    float _currentYaw;
+    Transform _xrOriginCached;
 
     void Awake()
     {
-        var grabInteractables = Object.FindObjectsByType<XRGrabInteractable>(FindObjectsSortMode.None);
-        foreach (var grab in grabInteractables)
+        _currentYaw = transform.eulerAngles.y;
+
+        var grabs = Object.FindObjectsByType<XRGrabInteractable>(FindObjectsSortMode.None);
+        foreach (var g in grabs)
         {
-            if (grab.GetComponent<M60VRShoot>() == null) continue;
-            grab.selectEntered.AddListener(OnGunGrabbed);
-            grab.selectExited.AddListener(OnGunReleased);
+            if (g.GetComponent<M60VRShoot>() == null) continue;
+            g.selectEntered.AddListener(OnGunGrabbed);
+            g.selectExited.AddListener(OnGunReleased);
         }
     }
 
     void OnDestroy()
     {
-        var grabInteractables = Object.FindObjectsByType<XRGrabInteractable>(FindObjectsSortMode.None);
-        foreach (var grab in grabInteractables)
+        var grabs = Object.FindObjectsByType<XRGrabInteractable>(FindObjectsSortMode.None);
+        foreach (var g in grabs)
         {
-            if (grab.GetComponent<M60VRShoot>() == null) continue;
-            grab.selectEntered.RemoveListener(OnGunGrabbed);
-            grab.selectExited.RemoveListener(OnGunReleased);
+            if (g.GetComponent<M60VRShoot>() == null) continue;
+            g.selectEntered.RemoveListener(OnGunGrabbed);
+            g.selectExited.RemoveListener(OnGunReleased);
         }
     }
 
     void OnGunGrabbed(SelectEnterEventArgs _) => _grabbedCount++;
-    void OnGunReleased(SelectExitEventArgs _)
+    void OnGunReleased(SelectExitEventArgs _) { if (--_grabbedCount < 0) _grabbedCount = 0; }
+
+    Camera GetCam() => headCamera != null ? headCamera : Camera.main;
+
+    Transform GetXROrigin()
     {
-        _grabbedCount--;
-        if (_grabbedCount <= 0)
-        {
-            _grabbedCount = 0;
-            _capturedInitialAngles = false;
-        }
+        if (xrOriginOverride != null) return xrOriginOverride;
+        if (_xrOriginCached != null) return _xrOriginCached;
+        Camera cam = GetCam();
+        if (cam == null) return null;
+        Transform t = cam.transform;
+        while (t.parent != null) t = t.parent;
+        _xrOriginCached = t;
+        return _xrOriginCached;
     }
 
     void LateUpdate()
     {
-        if (_grabbedCount <= 0) return;
-
-        Camera cam = headCamera != null ? headCamera : Camera.main;
+        Camera cam = GetCam();
         if (cam == null) return;
 
-        Vector3 axis = GetRotationAxis();
-        if (axis.sqrMagnitude < 0.0001f) return;
-        axis.Normalize();
+        float camYaw = cam.transform.eulerAngles.y;
+        if (!_camYawCaptured) { _prevCamYaw = camYaw; _camYawCaptured = true; }
 
-        if (!_capturedInitialAngles)
+        bool vrActive = vrAlwaysActive || _grabbedCount > 0;
+
+        // --- VR-поворот: только платформа, XR Origin НЕ трогаем ---
+        // Вращение XR Origin от головы вызывало двойной счёт: на каждый 1 оборот
+        // головы платформа вращалась ~0.5 оборота. Теперь 1:1.
+        float vrDelta = 0f;
+        if (vrActive)
+            vrDelta = Mathf.DeltaAngle(_prevCamYaw, camYaw);
+
+        // --- Клавиатура: вращаем платформу И XR Origin ---
+        float keyDelta = 0f;
+        if (keyboardAlwaysActive || vrActive)
         {
-            _initialPlatformAngle = GetYawAngleInPlane(transform.forward, axis);
-            _initialCameraAngle = GetYawAngleInPlane(cam.transform.forward, axis);
-            _capturedInitialAngles = true;
+#if ENABLE_INPUT_SYSTEM
+            var kb = Keyboard.current;
+            if (kb != null)
+            {
+                if (kb.rightArrowKey.isPressed) keyDelta += keyboardYawSpeed * Time.deltaTime;
+                if (kb.leftArrowKey.isPressed)  keyDelta -= keyboardYawSpeed * Time.deltaTime;
+            }
+#else
+            if (UnityEngine.Input.GetKey(KeyCode.RightArrow)) keyDelta += keyboardYawSpeed * Time.deltaTime;
+            if (UnityEngine.Input.GetKey(KeyCode.LeftArrow))  keyDelta -= keyboardYawSpeed * Time.deltaTime;
+#endif
         }
 
-        float currentCameraAngle = GetYawAngleInPlane(cam.transform.forward, axis);
-        float deltaAngle = Mathf.DeltaAngle(_initialCameraAngle, currentCameraAngle);
-        float targetAngle = _initialPlatformAngle + deltaAngle;
-        Quaternion newRotation = Quaternion.AngleAxis(targetAngle, axis);
+        float totalDelta = vrDelta + keyDelta;
+        _currentYaw += totalDelta;
 
-        if (rotationCenter != null)
+        if (Mathf.Abs(totalDelta) > 0.0001f)
         {
-            Vector3 centerWorldPos = rotationCenter.position;
-            Vector3 localOffset = transform.InverseTransformPoint(centerWorldPos);
-            transform.rotation = newRotation;
-            transform.position = centerWorldPos - transform.TransformVector(localOffset);
+            Vector3 pivot = cam.transform.position;
+            pivot.y = transform.position.y;
+            transform.RotateAround(pivot, Vector3.up, totalDelta);
         }
-        else
-        {
-            transform.rotation = newRotation;
-        }
-    }
 
-    Vector3 GetRotationAxis()
-    {
-        switch (rotationAxis)
-        {
-            case RotationAxisType.WorldY:  return Vector3.up;
-            case RotationAxisType.WorldX:   return Vector3.right;
-            case RotationAxisType.WorldZ:   return Vector3.forward;
-            case RotationAxisType.LocalY:   return transform.up;
-            case RotationAxisType.LocalX:   return transform.right;
-            case RotationAxisType.LocalZ:   return transform.forward;
-            case RotationAxisType.Custom:
-                if (customAxisTransform != null) return customAxisTransform.forward;
-                return customAxis;
-            default: return transform.up;
-        }
-    }
+        // Фиксируем только YAW на уровне antiaircraft gun (pitch — в GunPivotFollowHeadPitch)
+        transform.rotation = Quaternion.Euler(0f, _currentYaw, 0f);
 
-    /// <summary>Угол в плоскости, перпендикулярной оси: от мировой «вперёд» к направлению взгляда.</summary>
-    static float GetYawAngleInPlane(Vector3 lookDirection, Vector3 rotationAxis)
-    {
-        Vector3 proj = Vector3.ProjectOnPlane(lookDirection, rotationAxis);
-        if (proj.sqrMagnitude < 0.0001f) return 0f;
-        proj.Normalize();
-        Vector3 refInPlane = Vector3.ProjectOnPlane(Vector3.forward, rotationAxis);
-        if (refInPlane.sqrMagnitude < 0.0001f) refInPlane = Vector3.ProjectOnPlane(Vector3.right, rotationAxis);
-        refInPlane.Normalize();
-        return Vector3.SignedAngle(refInPlane, proj, rotationAxis);
+        // Клавишный поворот также двигает игрока
+        if (Mathf.Abs(keyDelta) > 0.0001f && rotateXROriginWithKeyboard)
+        {
+            Transform xrOrigin = GetXROrigin();
+            if (xrOrigin != null)
+                xrOrigin.RotateAround(cam.transform.position, Vector3.up, keyDelta);
+        }
+
+        // Обновляем ПОСЛЕ всех поворотов, чтобы не считать наш же поворот повторно
+        _prevCamYaw = cam.transform.eulerAngles.y;
     }
 }

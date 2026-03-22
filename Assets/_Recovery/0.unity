@@ -1679,6 +1679,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 740d8dfcd536be24fbec67e27cd16465, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2000000002}
+    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 740d8dfcd536be24fbec67e27cd16465, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1297095949}
     - targetCorrespondingSourceObject: {fileID: -2391904496831147353, guid: 740d8dfcd536be24fbec67e27cd16465, type: 3}
       insertIndex: -1
       addedObject: {fileID: 806177688}
@@ -3481,18 +3484,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -3255560509324385157, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: -3255560509324385157, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: -3255560509324385157, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 20
-      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       propertyPath: m_Name
       value: m60-case
@@ -3519,6 +3510,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
+--- !u!4 &1297095949 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
+  m_PrefabInstance: {fileID: 1297095948}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1321504181 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400004, guid: 73c2999be80b3be4e816d348fea624e1, type: 3}
@@ -3879,15 +3875,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 1
+      value: -1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -3895,7 +3891,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 180
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -3916,7 +3912,10 @@ PrefabInstance:
     - {fileID: 7959315825749191619, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
     - {fileID: 8921902777387604676, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
     - {fileID: 5343339334697166909, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1884137941}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       insertIndex: -1
@@ -4387,10 +4386,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GunPlatformTurrelFollowYaw
   headCamera: {fileID: 0}
   xrOriginOverride: {fileID: 0}
-  rotateXROriginWithKeyboard: 1
+  rotateXROriginWithPlatform: 1
   vrAlwaysActive: 1
   keyboardAlwaysActive: 1
   keyboardYawSpeed: 60
+  maxPlatformPitch: 55
+  keyboardPitchSpeed: 45
+  pitchSmoothTime: 0.07
 --- !u!1001 &1615088434
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5357,27 +5359,27 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       propertyPath: m_LocalScale.x
-      value: 2.4
+      value: 0.99999994
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       propertyPath: m_LocalScale.y
-      value: 2.4
+      value: 0.99999994
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       propertyPath: m_LocalScale.z
-      value: 2.4
+      value: -0.99999994
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -0.33
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -0.15
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 19.1
+      value: 7.94
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 55273e41c8d147f4bb1434b57672900f, type: 3}
       propertyPath: m_LocalRotation.w
@@ -6236,7 +6238,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1518063526}
-  - {fileID: 1884137941}
   m_Father: {fileID: 1591047807}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2000000003
@@ -6251,14 +6252,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c3e8f2a1d4b9056ae2f13c7d8e05b4a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GunPivotFollowHeadPitch
-  headCamera: {fileID: 0}
-  vrAlwaysActive: 1
-  minPitch: 0
-  maxPitch: 55
-  invertVRPitch: 0
-  keyboardAlwaysActive: 1
-  keyboardPitchSpeed: 45
-  invertKeyboardPitch: 0
 --- !u!1 &2000000010
 GameObject:
   m_ObjectHideFlags: 0
@@ -6915,5 +6908,4 @@ SceneRoots:
   - {fileID: 1864180709}
   - {fileID: 1952051679}
   - {fileID: 632186539}
-  - {fileID: 1297095948}
   - {fileID: 2000000011}

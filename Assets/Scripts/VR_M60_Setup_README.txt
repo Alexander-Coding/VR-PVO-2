@@ -41,16 +41,36 @@
    • Дым из ствола: в M60 VR Shoot поле Muzzle Smoke — перетащите свой ParticleSystem или оставьте пустым: скрипт создаст простой эффект дыма у точки опоры.
    • Звуки выстрела: перетащите tush_net_1..4 в Shoot Clips или положите в Assets/Resources/Sound/.
 
-5) ТОЧКА ОПОРЫ (m60 receiver) И РЕЖИМ «ТУРЕЛЬ»
+5) НАВЕДЕНИЕ ВВЕРХ-ВНИЗ (pitch) И ПРИЦЕЛ ПО ЦЕНТРУ ЭКРАНА
+
+   ИЕРАРХИЯ ДЛЯ РЕЖИМА ПОЛНОГО НАВЕДЕНИЯ ГОЛОВОЙ:
+
+     GunPlatformTurrel          ← GunPlatformTurrelFollowYaw   (влево-вправо за головой)
+       └─ GunPitchPivot         ← GunPivotFollowHeadPitch      (вверх-вниз за головой)
+            └─ m60              ← XRGrabInteractable + M60VRShoot + GunPivotLockGrabTransformer
+
+   НАСТРОЙКА:
+   • Создайте пустой объект "GunPitchPivot" внутри GunPlatformTurrel (на уровне m60 или чуть выше).
+   • Сделайте m60 дочерним к GunPitchPivot.
+   • На GunPitchPivot добавьте компонент GunPivotFollowHeadPitch.
+     - Min Pitch / Max Pitch — диапазон наклона (например −30° / +60°).
+     - Smooth Time — сглаживание следования за головой (0 = мгновенно).
+   • Прицел по центру экрана: создайте пустой объект в сцене, добавьте Canvas и VRGunCrosshair.
+     Он появляется автоматически, когда захвачена любая пушка с M60VRShoot.
+
+5а) ТОЧКА ОПОРЫ (m60 receiver) И РЕЖИМ «ТУРЕЛЬ»
    • Точка опоры и захвата по умолчанию — дочерний объект "m60 receiver". M60 VR Shoot при старте подставляет его в Pivot Point и в Attach Transform у XR Grab Interactable.
    • Чтобы при захвате точка опоры оставалась неподвижной в мире (режим закреплённой турели — только наведение вверх/вниз и в стороны), на m60 добавлен компонент Gun Pivot Lock Grab Transformer и он указан в XR Grab Interactable → Starting Single Grab Transformers. Pivot Transform в трансформере можно оставить пустым — тогда используется pivot из M60 VR Shoot (m60 receiver).
    • Вариант без турели: не добавляйте Gun Pivot Lock Grab Transformer; оружие будет следовать за контроллером как обычно.
 
 6) КРАТКО
    • GunPlatform — пустой объект с именем "GunPlatform"; VRSetupManager ставит на него XR Origin и играет стартовый звук.
-   • m60 (и при необходимости m60-1): XR Grab Interactable + M60 VR Shoot + Gun Pivot Lock Grab Transformer (для режима турели); коллайдеры обязательны.
+   • GunPlatformTurrel + GunPlatformTurrelFollowYaw → поворот влево-вправо за головой.
+   • GunPitchPivot + GunPivotFollowHeadPitch → наклон пушки вверх-вниз за головой.
+   • m60 (и при необходимости m60-1): XR Grab Interactable + M60 VR Shoot + Gun Pivot Lock Grab Transformer; коллайдеры обязательны.
+   • Прицел: Canvas + VRGunCrosshair в сцене → появляется по центру экрана при захвате.
    • Стрельба: кнопка активации (триггер) в VR → гильзы (M60ShellEjection.Fire) + случайный tush_net.
-   • Точка опоры: m60 receiver (подставляется автоматически); при использовании Gun Pivot Lock Grab Transformer остаётся неподвижной в мире при захвате.
+   • Точка опоры: m60 receiver (подставляется автоматически); Gun Pivot Lock Grab Transformer фиксирует её в мировом пространстве.
 
 7) ЕСЛИ НЕ РАБОТАЕТ ВЗАИМОДЕЙСТВИЕ С ПУШКАМИ
    • Откройте чек-лист: Assets/Scripts/VR_Interaction_Checklist.txt

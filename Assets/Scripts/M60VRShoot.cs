@@ -7,80 +7,65 @@ using UnityEngine.InputSystem;
 
 /// <summary>
 /// Вешается на объект с XRGrabInteractable (m60 или m60-1).
-/// На активацию (нажатие триггера) — вызов выброса гильз и случайный звук выстрела.
-/// Поддерживает точку опоры (pivot) для движения оружия относительно неё.
+/// На активацию (триггер VR) или LKM/Пробел — стрельба: выброс гильз, звук, пуля.
+/// Поддерживает перегрев, дым из ствола, паровой звук.
+/// Если prefab пули не задан и объект "m60-bullet" не найден в сцене — создаётся шаровая пуля.
 /// </summary>
 [RequireComponent(typeof(XRGrabInteractable))]
 public class M60VRShoot : MonoBehaviour
 {
     [Header("Выстрел и гильзы")]
-    [Tooltip("Скрипт выброса гильз (на корне m60 или на этом объекте). Если не задан — ищется на этом объекте или у родителя.")]
+    [Tooltip("Скрипт выброса гильз. Если не задан — ищется на этом объекте или у родителя.")]
     public M60ShellEjection shellEjection;
-    [Tooltip("Интервал между выстрелами (сек), чтобы не спамить гильзами")]
+    [Tooltip("Интервал между выстрелами (сек)")]
     public float fireRate = 0.12f;
 
     [Header("Звук выстрела")]
-    [Tooltip("Клипы выстрела (tush_net_1..4). Если пусто — загружаются из Resources/Sound/ по именам tush_net_1..4.")]
+    [Tooltip("Клипы выстрела (tush_net_1..4). Если пусто — загружаются из Resources/Sound/.")]
     public AudioClip[] shootClips;
-    [Tooltip("Громкость выстрела")]
     [Range(0f, 1f)]
     public float shootVolume = 0.8f;
 
     [Header("Точка опоры (pivot)")]
-    [Tooltip("Точка опоры и захвата (рекомендуется m60 receiver). Мировая позиция не меняется при захвате, если используется GunPivotLockGrabTransformer. Если не задана — ищется дочерний «m60 receiver».")]
+    [Tooltip("Точка опоры (m60 receiver). Если не задана — ищется дочерний 'm60 receiver'.")]
     public Transform pivotPoint;
-    [Tooltip("Если true, при захвате оружие смещается так, чтобы pivot совпадал с точкой захвата контроллера.")]
+    [Tooltip("При захвате оружие совмещает pivot с точкой захвата контроллера.")]
     public bool usePivotForGrab = true;
 
-    [Header("Резервный ввод (мышь / клавиатура)")]
-    [Tooltip("Стрелять зажатой ЛКМ (мышь) или по триггеру в VR. Для VR привяжите на контроллере Activate к триггеру.")]
+    [Header("Ввод — мышь / клавиатура")]
+    [Tooltip("ЛКМ или Пробел (или VR триггер) — стрельба.")]
     public bool useNonVRFireInput = true;
 
     [Header("Перегрев")]
-    [Tooltip("Случайный интервал стрельбы до перегрева (сек): минимум")]
     public float overheatTimeMin = 30f;
-    [Tooltip("Случайный интервал стрельбы до перегрева (сек): максимум")]
     public float overheatTimeMax = 45f;
-    [Tooltip("Время остывания после перегрева (сек)")]
     public float cooldownDuration = 5f;
 
     [Header("Дым из ствола")]
-    [Tooltip("Эффект дыма из ствола при выстреле. Если не задан — ищется дочерний MuzzleSmoke.")]
+    [Tooltip("ParticleSystem дыма. Если не задан — ищется дочерний MuzzleSmoke.")]
     public ParticleSystem muzzleSmoke;
 
     [Header("Звук пара при перегреве")]
-    [Tooltip("Звук пара/дыма при перегреве. Если не задан — загружается Resources/Sound/steam.")]
     public AudioClip steamSound;
 
     [Header("Пули")]
-    [Tooltip("Префаб или объект пули (m60-bullet). Если не задан — ищется в сцене по имени «m60-bullet».")]
+    [Tooltip("Префаб или шаблон пули. Если не задан — ищется 'm60-bullet' в сцене или создаётся шаровая пуля.")]
     public GameObject bulletPrefab;
-    [Tooltip("Точка вылета пули. Направление полёта задаётся ниже (настраиваемо).")]
+    [Tooltip("Точка вылета пули (muzzle). Если не задана — используется pivotPoint.")]
     public Transform muzzlePoint;
-    [Tooltip("Масштаб пули относительно префаба (реалистично ~0.01–0.1).")]
+    [Tooltip("Масштаб пули.")]
     [Range(0.001f, 2f)]
     public float bulletScale = 0.05f;
-    [Tooltip("Скорость вылета пули (м/с).")]
+    [Tooltip("Скорость пули (м/с).")]
     public float bulletSpeed = 80f;
-    [Tooltip("Через сколько секунд пулю уничтожить (0 — не уничтожать).")]
+    [Tooltip("Через сколько секунд уничтожить пулю (0 — не уничтожать).")]
     public float bulletLifetime = 5f;
 
-    public enum BulletDirectionMode
-    {
-        [Tooltip("По оси вперёд точки вылета (muzzle forward).")]
-        MuzzleForward,
-        [Tooltip("По направлению заданного объекта (его forward).")]
-        CustomTransform,
-        [Tooltip("Направление в локальных осях точки вылета (X=вправо, Y=вверх, Z=вперёд).")]
-        LocalDirection
-    }
+    public enum BulletDirectionMode { MuzzleForward, CustomTransform, LocalDirection }
 
-    [Header("Направление полёта пули")]
-    [Tooltip("Откуда брать направление: по стволу, от объекта или локальный вектор.")]
+    [Header("Направление пули")]
     public BulletDirectionMode bulletDirectionMode = BulletDirectionMode.MuzzleForward;
-    [Tooltip("Используется при CustomTransform: forward этого объекта = направление пули.")]
     public Transform bulletDirectionTransform;
-    [Tooltip("Используется при LocalDirection: направление в локальных осях muzzle (например (0,0,1)=вперёд, (1,0,0)=вправо).")]
     public Vector3 bulletDirectionLocal = new Vector3(0f, 0f, 1f);
 
     XRGrabInteractable _grab;
@@ -120,7 +105,22 @@ public class M60VRShoot : MonoBehaviour
     {
         if (bulletPrefab != null) { _cachedBulletTemplate = bulletPrefab; return; }
         var found = GameObject.Find("m60-bullet");
-        if (found != null) _cachedBulletTemplate = found;
+        if (found != null) { _cachedBulletTemplate = found; return; }
+        // Создаём шаблон пули из сферы, деактивируем его как шаблон
+        _cachedBulletTemplate = CreateDefaultBulletTemplate();
+    }
+
+    GameObject CreateDefaultBulletTemplate()
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        go.name = "m60-bullet";
+        go.transform.localScale = Vector3.one * 0.05f;
+        // Шаблон деактивирован, клонируется при выстреле
+        go.SetActive(false);
+        // Коллайдер на шаблоне отключаем — включится на клоне при необходимости
+        var col = go.GetComponent<Collider>();
+        if (col != null) col.enabled = false;
+        return go;
     }
 
     void EnsureSteamSound()
@@ -160,20 +160,22 @@ public class M60VRShoot : MonoBehaviour
             return;
         }
 
-        bool fireHeld = GetFireButtonHeld();
-        if (useNonVRFireInput && _grab != null && _grab.isSelected && fireHeld)
+        if (useNonVRFireInput && GetFireButtonHeld())
             DoFire();
     }
 
-    /// <summary>Возвращает true, пока зажата кнопка стрельбы (ЛКМ в новом Input System).</summary>
     bool GetFireButtonHeld()
     {
 #if ENABLE_INPUT_SYSTEM
-        if (Mouse.current != null && Mouse.current.leftButton.isPressed)
-            return true;
+        var mouse = Mouse.current;
+        var kb = Keyboard.current;
+        if (mouse != null && mouse.leftButton.isPressed) return true;
+        if (kb != null && kb.spaceKey.isPressed) return true;
         return false;
 #else
-        return UnityEngine.Input.GetButton("Fire1") || UnityEngine.Input.GetMouseButton(0);
+        return UnityEngine.Input.GetButton("Fire1")
+            || UnityEngine.Input.GetMouseButton(0)
+            || UnityEngine.Input.GetKey(KeyCode.Space);
 #endif
     }
 
@@ -206,40 +208,48 @@ public class M60VRShoot : MonoBehaviour
             return;
         }
 
-        if (shellEjection != null)
-            shellEjection.Fire();
-
+        if (shellEjection != null) shellEjection.Fire();
         PlayRandomShootSound();
-        if (muzzleSmoke != null)
-            muzzleSmoke.Play();
+        if (muzzleSmoke != null) muzzleSmoke.Play();
         SpawnBullet();
     }
 
     void SpawnBullet()
     {
         if (_cachedBulletTemplate == null) return;
-        Transform spawn = muzzlePoint != null ? muzzlePoint : transform;
+
+        Transform spawn = muzzlePoint != null ? muzzlePoint : (pivotPoint != null ? pivotPoint : transform);
         Vector3 pos = spawn.position;
         Vector3 dir = GetBulletDirection(spawn);
         if (dir.sqrMagnitude < 0.0001f) dir = spawn.forward;
         dir = dir.normalized;
         Quaternion rot = Quaternion.LookRotation(dir);
+
         GameObject bullet = Instantiate(_cachedBulletTemplate, pos, rot);
         bullet.name = "m60-bullet(Clone)";
         bullet.transform.localScale = Vector3.one * bulletScale;
-        Rigidbody rb = bullet.GetComponent<Rigidbody>();
-        Vector3 velocity = dir * bulletSpeed;
-        if (rb != null)
-        {
-            rb.isKinematic = false;
-            rb.linearVelocity = velocity;
-        }
+        bullet.SetActive(true);
+
+        // Гарантируем коллайдер (нужен для попадания)
+        var existingCol = bullet.GetComponent<Collider>();
+        if (existingCol != null)
+            existingCol.enabled = true;
         else
         {
-            rb = bullet.AddComponent<Rigidbody>();
-            rb.useGravity = false;
-            rb.linearVelocity = velocity;
+            var sc = bullet.AddComponent<SphereCollider>();
+            sc.radius = 0.5f;
         }
+
+        Rigidbody rb = bullet.GetComponent<Rigidbody>();
+        if (rb == null) rb = bullet.AddComponent<Rigidbody>();
+        rb.isKinematic = false;
+        rb.useGravity = false;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        rb.linearVelocity = dir * bulletSpeed;
+
+        if (bullet.GetComponent<BulletHit>() == null)
+            bullet.AddComponent<BulletHit>();
+
         if (bulletLifetime > 0f)
             Destroy(bullet, bulletLifetime);
     }
@@ -251,9 +261,7 @@ public class M60VRShoot : MonoBehaviour
             case BulletDirectionMode.MuzzleForward:
                 return muzzle.forward;
             case BulletDirectionMode.CustomTransform:
-                if (bulletDirectionTransform != null)
-                    return bulletDirectionTransform.forward;
-                return muzzle.forward;
+                return bulletDirectionTransform != null ? bulletDirectionTransform.forward : muzzle.forward;
             case BulletDirectionMode.LocalDirection:
                 return muzzle.TransformDirection(bulletDirectionLocal.normalized);
             default:
@@ -272,18 +280,11 @@ public class M60VRShoot : MonoBehaviour
         if (clip == null)
         {
             EnsureShootClips();
-            foreach (var c in shootClips)
-                if (c != null) { clip = c; break; }
+            foreach (var c in shootClips) if (c != null) { clip = c; break; }
         }
         if (clip == null) return;
 
-        if (_audioSource == null)
-        {
-            _audioSource = gameObject.GetComponent<AudioSource>();
-            if (_audioSource == null) _audioSource = gameObject.AddComponent<AudioSource>();
-            _audioSource.playOnAwake = false;
-            _audioSource.spatialBlend = 1f;
-        }
+        EnsureAudioSource();
         _audioSource.PlayOneShot(clip, shootVolume);
     }
 
@@ -291,14 +292,20 @@ public class M60VRShoot : MonoBehaviour
     {
         EnsureSteamSound();
         if (steamSound == null) return;
+        EnsureAudioSource();
+        _audioSource.PlayOneShot(steamSound, 0.8f);
+    }
+
+    void EnsureAudioSource()
+    {
+        if (_audioSource != null) return;
+        _audioSource = GetComponent<AudioSource>();
         if (_audioSource == null)
         {
-            _audioSource = gameObject.GetComponent<AudioSource>();
-            if (_audioSource == null) _audioSource = gameObject.AddComponent<AudioSource>();
+            _audioSource = gameObject.AddComponent<AudioSource>();
             _audioSource.playOnAwake = false;
             _audioSource.spatialBlend = 1f;
         }
-        _audioSource.PlayOneShot(steamSound, 0.8f);
     }
 
     ParticleSystem CreateDefaultMuzzleSmoke()
@@ -334,12 +341,5 @@ public class M60VRShoot : MonoBehaviour
         return ps;
     }
 
-    /// <summary>
-    /// Точка опоры для захвата: возвращает pivot, если задан, иначе transform.
-    /// В Inspector на XRGrabInteractable можно выставить Attach Transform в этот transform (дочерний pivot), чтобы оружие двигалось относительно рукояти.
-    /// </summary>
-    public Transform GetAttachPivot()
-    {
-        return pivotPoint != null ? pivotPoint : transform;
-    }
+    public Transform GetAttachPivot() => pivotPoint != null ? pivotPoint : transform;
 }
