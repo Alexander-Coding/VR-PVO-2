@@ -11,7 +11,8 @@
       "mcp__unityMCP__create_script",
       "mcp__unityMCP__refresh_unity",
       "mcp__unityMCP__read_console",
-      "mcp__unityMCP__manage_camera"
+      "mcp__unityMCP__manage_camera",
+      "mcp__unityMCP__manage_gameobject"
     ]
   },
   "enableAllProjectMcpServers": true,

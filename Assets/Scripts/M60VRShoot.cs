@@ -40,6 +40,8 @@ public class M60VRShoot : MonoBehaviour
     public float overheatTimeMin = 30f;
     public float overheatTimeMax = 45f;
     public float cooldownDuration = 5f;
+    [Tooltip("Скорость пассивного охлаждения (сек нагрева / сек реального времени). 0 = не охлаждается само.")]
+    public float passiveCoolRate = 2f;
 
     [Header("Дым из ствола")]
     [Tooltip("ParticleSystem дыма. Если не задан — ищется дочерний MuzzleSmoke.")]
@@ -70,6 +72,7 @@ public class M60VRShoot : MonoBehaviour
 
     XRGrabInteractable _grab;
     AudioSource _audioSource;
+    AudioSource _steamSource;
     float _lastFireTime;
     float _fireTimeAccum;
     float _overheatAfter;
@@ -93,7 +96,16 @@ public class M60VRShoot : MonoBehaviour
             muzzleSmoke = transform.Find("MuzzleSmoke")?.GetComponent<ParticleSystem>();
         if (muzzleSmoke == null)
             muzzleSmoke = CreateDefaultMuzzleSmoke();
+        // Ищем ствол как точку вылета пули
+        if (muzzlePoint == null)
+        {
+            var barrel = transform.Find("m60 barrel 22in");
+            if (barrel != null) muzzlePoint = barrel;
+        }
         if (muzzlePoint == null) muzzlePoint = pivotPoint;
+        // Пуля летит вдоль локальной оси -X ствола
+        bulletDirectionMode = BulletDirectionMode.LocalDirection;
+        bulletDirectionLocal = new Vector3(-1f, 0f, 0f);
         EnsureBulletTemplate();
         EnsureShootClips();
         EnsureSteamSound();
@@ -156,12 +168,20 @@ public class M60VRShoot : MonoBehaviour
             {
                 _overheated = false;
                 _overheatAfter = Random.Range(overheatTimeMin, overheatTimeMax);
+                StopSteamSound();
             }
             return;
         }
 
         if (useNonVRFireInput && GetFireButtonHeld())
             DoFire();
+
+        // Пассивное охлаждение — нагрев убывает когда не стреляем
+        if (passiveCoolRate > 0f && _fireTimeAccum > 0f
+            && Time.time - _lastFireTime > fireRate * 2f)
+        {
+            _fireTimeAccum = Mathf.Max(0f, _fireTimeAccum - passiveCoolRate * Time.deltaTime);
+        }
     }
 
     bool GetFireButtonHeld()
@@ -292,8 +312,22 @@ public class M60VRShoot : MonoBehaviour
     {
         EnsureSteamSound();
         if (steamSound == null) return;
-        EnsureAudioSource();
-        _audioSource.PlayOneShot(steamSound, 0.8f);
+        if (_steamSource == null)
+        {
+            _steamSource = gameObject.AddComponent<AudioSource>();
+            _steamSource.playOnAwake = false;
+            _steamSource.spatialBlend = 1f;
+            _steamSource.loop = true;
+        }
+        _steamSource.clip = steamSound;
+        _steamSource.volume = 0.8f;
+        _steamSource.Play();
+    }
+
+    void StopSteamSound()
+    {
+        if (_steamSource != null && _steamSource.isPlaying)
+            _steamSource.Stop();
     }
 
     void EnsureAudioSource()
@@ -342,4 +376,20 @@ public class M60VRShoot : MonoBehaviour
     }
 
     public Transform GetAttachPivot() => pivotPoint != null ? pivotPoint : transform;
+
+    /// <summary>
+    /// Доля нагрева 0..1. Во время охлаждения убывает от 1 до 0.
+    /// </summary>
+    public float HeatFraction
+    {
+        get
+        {
+            if (_overheated)
+                return cooldownDuration > 0f ? Mathf.Clamp01(_cooldownRemaining / cooldownDuration) : 1f;
+            if (_overheatAfter <= 0f) return 0f;
+            return Mathf.Clamp01(_fireTimeAccum / _overheatAfter);
+        }
+    }
+
+    public bool IsOverheated => _overheated;
 }

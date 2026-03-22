@@ -56,9 +56,28 @@ public class BulletHit : MonoBehaviour
 
         if (flying != null)
         {
+            // Небольшой эффект попадания
             SpawnEffect(point);
             PlayHitSound(point);
-            Destroy(flying.gameObject);
+
+            // Отключаем полётный скрипт — цель начинает падать
+            flying.enabled = false;
+
+            // Включаем физику
+            Rigidbody rb = flying.GetComponent<Rigidbody>();
+            if (rb == null) rb = flying.gameObject.AddComponent<Rigidbody>();
+            rb.isKinematic = false;
+            rb.useGravity = true;
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+            // Небольшой импульс от попадания
+            rb.linearVelocity = transform.forward * 5f + Vector3.up * 2f;
+
+            // DroppedCubeExplosion — взрыв при падении на землю
+            var explosion = flying.GetComponent<DroppedCubeExplosion>();
+            if (explosion == null) explosion = flying.gameObject.AddComponent<DroppedCubeExplosion>();
+            if (hitEffectPrefab != null) explosion.explosionEffectPrefab = hitEffectPrefab;
+            if (hitSound != null) explosion.explosionClip = hitSound;
+            explosion.explosionScale = 0.6f;
         }
         else
         {
