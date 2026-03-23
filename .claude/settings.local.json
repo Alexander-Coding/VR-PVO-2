@@ -14,7 +14,8 @@
       "mcp__unityMCP__manage_camera",
       "mcp__unityMCP__manage_gameobject",
       "mcp__unityMCP__find_gameobjects",
-      "mcp__unityMCP__manage_components"
+      "mcp__unityMCP__manage_components",
+      "mcp__unityMCP__script_apply_edits"
     ]
   },
   "enableAllProjectMcpServers": true,

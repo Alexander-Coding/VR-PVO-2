@@ -37,11 +37,11 @@ public class M60VRShoot : MonoBehaviour
     public bool useNonVRFireInput = true;
 
     [Header("Перегрев")]
-    public float overheatTimeMin = 30f;
-    public float overheatTimeMax = 45f;
+    public float overheatTimeMin = 10f;
+    public float overheatTimeMax = 15f;
     public float cooldownDuration = 5f;
     [Tooltip("Скорость пассивного охлаждения (сек нагрева / сек реального времени). 0 = не охлаждается само.")]
-    public float passiveCoolRate = 1f;
+    public float passiveCoolRate = 0.05f;
 
     [Header("Дым из ствола")]
     [Tooltip("ParticleSystem дыма. Если не задан — ищется дочерний MuzzleSmoke.")]
