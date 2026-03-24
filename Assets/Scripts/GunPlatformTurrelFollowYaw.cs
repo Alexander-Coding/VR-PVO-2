@@ -37,11 +37,21 @@ public class GunPlatformTurrelFollowYaw : MonoBehaviour
     float _prevCamYaw;
     bool _camYawCaptured;
     float _currentYaw;
+    float _initialYaw;
     Transform _xrOriginCached;
+
+    /// <summary>Сбрасывает yaw зенитки к начальному положению (вызывается при посадке).</summary>
+    public void ResetToInitialYaw()
+    {
+        _currentYaw     = _initialYaw;
+        _camYawCaptured = false;
+        transform.rotation = Quaternion.Euler(0f, _initialYaw, 0f);
+    }
 
     void Awake()
     {
-        _currentYaw = transform.eulerAngles.y;
+        _initialYaw = transform.eulerAngles.y;
+        _currentYaw = _initialYaw;
 
         var grabs = Object.FindObjectsByType<XRGrabInteractable>(FindObjectsSortMode.None);
         foreach (var g in grabs)
@@ -82,6 +92,13 @@ public class GunPlatformTurrelFollowYaw : MonoBehaviour
 
     void LateUpdate()
     {
+        // Если игрок не сидит за зениткой — не реагируем ни на что
+        if (!TurretSeatController.IsMounted)
+        {
+            _camYawCaptured = false; // сбросить, чтобы при посадке не было рывка
+            return;
+        }
+
         Camera cam = GetCam();
         if (cam == null) return;
 

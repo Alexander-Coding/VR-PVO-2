@@ -15,7 +15,8 @@
       "mcp__unityMCP__manage_gameobject",
       "mcp__unityMCP__find_gameobjects",
       "mcp__unityMCP__manage_components",
-      "mcp__unityMCP__script_apply_edits"
+      "mcp__unityMCP__script_apply_edits",
+      "mcp__unityMCP__validate_script"
     ]
   },
   "enableAllProjectMcpServers": true,

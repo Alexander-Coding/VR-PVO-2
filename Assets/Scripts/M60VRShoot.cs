@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 #if ENABLE_INPUT_SYSTEM
@@ -39,9 +40,17 @@ public class M60VRShoot : MonoBehaviour
     [Header("Перегрев")]
     public float overheatTimeMin = 10f;
     public float overheatTimeMax = 15f;
-    public float cooldownDuration = 5f;
+    public float cooldownDuration = 15f;
     [Tooltip("Скорость пассивного охлаждения (сек нагрева / сек реального времени). 0 = не охлаждается само.")]
-    public float passiveCoolRate = 0.05f;
+    public float passiveCoolRate = 0.005f;
+
+    [Header("Патроны")]
+    [Tooltip("Максимальное количество патронов.")]
+    public int maxAmmo = 850;
+    [Tooltip("Начальное количество патронов.")]
+    public int ammoCount = 100;
+    [Tooltip("UI Text для отображения патронов. Если не задан — создаётся автоматически.")]
+    public Text ammoText;
 
     [Header("Дым из ствола")]
     [Tooltip("ParticleSystem дыма. Если не задан — ищется дочерний MuzzleSmoke.")]
@@ -98,6 +107,7 @@ public class M60VRShoot : MonoBehaviour
     bool _overheated;
     GameObject _cachedBulletTemplate;
     static readonly string[] TushNetNames = { "tush_net_1", "tush_net_2", "tush_net_3", "tush_net_4" };
+    static Text _sharedAmmoText;
 
     void Awake()
     {
@@ -165,6 +175,13 @@ public class M60VRShoot : MonoBehaviour
         _grab.attachTransform = pivotPoint;
     }
 
+    void Start()
+    {
+        if (ammoText == null)
+            TryCreateAmmoHUD();
+        UpdateAmmoUI();
+    }
+
     void OnEnable()
     {
         if (_grab != null)
@@ -204,6 +221,7 @@ public class M60VRShoot : MonoBehaviour
 
     bool GetFireButtonHeld()
     {
+        if (!TurretSeatController.IsMounted) return false;
 #if ENABLE_INPUT_SYSTEM
         var mouse = Mouse.current;
         var kb = Keyboard.current;
@@ -227,14 +245,19 @@ public class M60VRShoot : MonoBehaviour
 
     void OnActivated(ActivateEventArgs args)
     {
+        if (!TurretSeatController.IsMounted) return;
         DoFire();
     }
 
     void DoFire()
     {
         if (_overheated) return;
+        if (ammoCount <= 0) return;
         if (Time.time - _lastFireTime < fireRate) return;
         _lastFireTime = Time.time;
+
+        ammoCount--;
+        UpdateAmmoUI();
 
         _fireTimeAccum += fireRate;
         if (_fireTimeAccum >= _overheatAfter)
@@ -441,6 +464,57 @@ public class M60VRShoot : MonoBehaviour
         colorOverLifetime.color = grad;
         ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         return ps;
+    }
+
+    /// <summary>
+    /// Добавляет патроны (вызывается AmmoPickupZone при загрузке ящика).
+    /// </summary>
+    public void AddAmmo(int amount)
+    {
+        ammoCount = Mathf.Min(ammoCount + amount, maxAmmo);
+        UpdateAmmoUI();
+    }
+
+    void UpdateAmmoUI()
+    {
+        if (ammoText != null)
+            ammoText.text = $"Патроны: {ammoCount} / {maxAmmo}";
+    }
+
+    void TryCreateAmmoHUD()
+    {
+        // Используем уже созданный текст другим экземпляром (два ствола — один HUD)
+        if (_sharedAmmoText != null && _sharedAmmoText)
+        {
+            ammoText = _sharedAmmoText;
+            return;
+        }
+
+        var canvasGO = new GameObject("AmmoHUD");
+        var canvas = canvasGO.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 10;
+        canvasGO.AddComponent<CanvasScaler>();
+        canvasGO.AddComponent<GraphicRaycaster>();
+
+        var textGO = new GameObject("Text");
+        textGO.transform.SetParent(canvasGO.transform, false);
+
+        var textRT = textGO.AddComponent<RectTransform>();
+        // Нижний левый угол экрана
+        textRT.anchorMin = new Vector2(0f, 0f);
+        textRT.anchorMax = new Vector2(0.3f, 0.08f);
+        textRT.offsetMin = new Vector2(16f, 12f);
+        textRT.offsetMax = new Vector2(-4f, -4f);
+
+        var t = textGO.AddComponent<Text>();
+        t.font      = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        t.fontSize  = 32;
+        t.color     = new Color(1f, 0.9f, 0.2f, 1f);
+        t.alignment = TextAnchor.MiddleLeft;
+
+        ammoText        = t;
+        _sharedAmmoText = t;
     }
 
     public Transform GetAttachPivot() => pivotPoint != null ? pivotPoint : transform;

@@ -47,6 +47,13 @@ public class GunPivotFollowHeadPitch : MonoBehaviour
 
     void LateUpdate()
     {
+        // Если игрок не сидит за зениткой — не реагируем ни на что
+        if (!TurretSeatController.IsMounted)
+        {
+            _camPitchCaptured = false; // сбросить, чтобы при посадке не было рывка
+            return;
+        }
+
         Camera cam = GetCam();
         if (cam == null) return;
 
