@@ -30,6 +30,7 @@ public class TurretSeatController : MonoBehaviour
     // XR Origin
     Transform  _xrOrigin;
     XROrigin   _xrOriginComponent;
+    Vector3    _mountedXROriginPos; // позиция XR Origin при посадке — принудительно удерживаем
 
     // Начальные состояния
     Vector3    _initialCameraForward;   // захватывается в первый кадр (после VR-трекинга)
@@ -38,7 +39,8 @@ public class TurretSeatController : MonoBehaviour
     Vector3    _initialGunPos;
     Quaternion _initialGunRot;
 
-    Behaviour[] _locomotion;          // MoveProvider / TurnProvider — блокируем при посадке
+    GameObject  _locomotionGO;        // объект Locomotion — отключаем целиком при посадке
+    Behaviour[] _locomotion;          // fallback: отдельные провайдеры если объект не найден
     Renderer[]  _controllerRenderers; // модели контроллеров — скрываем при посадке
 
     Text   _promptText;
@@ -74,11 +76,13 @@ public class TurretSeatController : MonoBehaviour
             if (sp != null) spawnPoint = sp.transform;
         }
 
+        _locomotionGO        = FindLocomotionGO();
         _locomotion          = FindLocomotion();
         _controllerRenderers = FindControllerRenderers();
         _promptText          = CreatePromptUI();
 
         // Сразу применяем начальное состояние (сидим за зениткой)
+        if (_xrOrigin != null) _mountedXROriginPos = _xrOrigin.position;
         ApplyMountedState();
     }
 
@@ -109,6 +113,14 @@ public class TurretSeatController : MonoBehaviour
         }
 
         RefreshPrompt();
+    }
+
+    void LateUpdate()
+    {
+        // Жёстко фиксируем позицию XR Origin при посадке.
+        // Блокирует любое движение: XR Device Simulator, joystick, всё.
+        if (IsMounted && _xrOrigin != null)
+            _xrOrigin.position = _mountedXROriginPos;
     }
 
     // ── Посадка / Высадка ────────────────────────────────────────────────────
@@ -149,6 +161,7 @@ public class TurretSeatController : MonoBehaviour
         }
 
         IsMounted = true;
+        if (_xrOrigin != null) _mountedXROriginPos = _xrOrigin.position;
         ApplyMountedState();
         Debug.Log("[TurretSeat] Сел за зенитку.");
     }
@@ -163,9 +176,17 @@ public class TurretSeatController : MonoBehaviour
     /// <summary>Включает/выключает ходьбу и видимость контроллеров по состоянию IsMounted.</summary>
     void ApplyMountedState()
     {
-        // Ходьба и повороты — выключены когда сидим
-        foreach (var b in _locomotion)
-            if (b != null) b.enabled = !IsMounted;
+        // Ходьба и повороты — отключаем весь объект Locomotion (LocomotionMediator + все провайдеры)
+        if (_locomotionGO != null)
+        {
+            _locomotionGO.SetActive(!IsMounted);
+        }
+        else
+        {
+            // Fallback: отключаем провайдеры по отдельности
+            foreach (var b in _locomotion)
+                if (b != null) b.enabled = !IsMounted;
+        }
 
         // Модели контроллеров — скрыты когда сидим
         foreach (var r in _controllerRenderers)
@@ -209,7 +230,21 @@ public class TurretSeatController : MonoBehaviour
         return null;
     }
 
-    /// <summary>Находит все провайдеры движения и поворота XR Interaction Toolkit.</summary>
+    /// <summary>Находит объект Locomotion — дочерний к XR Origin, содержит LocomotionMediator и всех провайдеров.</summary>
+    GameObject FindLocomotionGO()
+    {
+        if (_xrOrigin != null)
+        {
+            var t = _xrOrigin.Find("Locomotion");
+            if (t != null) return t.gameObject;
+        }
+        var go = GameObject.Find("Locomotion");
+        if (go != null) return go;
+        Debug.LogWarning("[TurretSeat] Объект Locomotion не найден — движение не будет заблокировано.");
+        return null;
+    }
+
+    /// <summary>Находит все провайдеры движения и поворота XR Interaction Toolkit (fallback).</summary>
     Behaviour[] FindLocomotion()
     {
         var result = new List<Behaviour>();
